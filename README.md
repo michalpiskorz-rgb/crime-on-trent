@@ -1,2 +1,10 @@
-# crime-on-trent
-my personal project 
+# Crime on Trent
+
+Database and interactive map for crime cases.
+
+## Project
+
+- PHP
+- MySQL
+- Leaflet
+- Tabler
