@@ -1,0 +1,6 @@
+config/config.php
+.env
+.env.*
+!.env.example
+
+admin2/includes/db.php
