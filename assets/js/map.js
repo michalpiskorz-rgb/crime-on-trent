@@ -50,6 +50,7 @@ iconNames.forEach(name => {
 });
 
 
+
 // --------------------------------------------------
 // TEST CASES
 // --------------------------------------------------
@@ -111,6 +112,8 @@ const testCases = [
 // ADD MARKERS
 // --------------------------------------------------
 
+const markers = [];
+
 testCases.forEach(caseItem => {
 
     const icon = markerIcons[caseItem.category];
@@ -122,14 +125,14 @@ testCases.forEach(caseItem => {
         return;
     }
 
-    L.marker(
-        [caseItem.latitude, caseItem.longitude],
-        {
-            icon: icon
-        }
-    )
-    .addTo(map)
-    .bindPopup(`
+    const marker = L.marker(
+    [caseItem.latitude, caseItem.longitude],
+    {
+        icon: icon
+    }
+)
+.addTo(map)
+.bindPopup(`
         <div>
             <h3>${caseItem.title}</h3>
 
@@ -146,4 +149,13 @@ testCases.forEach(caseItem => {
             </p>
         </div>
     `);
+    markers.push(marker);
 });
+
+if (markers.length > 0) {
+    const group = L.featureGroup(markers);
+
+    map.fitBounds(group.getBounds(), {
+        padding: [50, 50]
+    });
+}
