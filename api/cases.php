@@ -15,7 +15,7 @@ try {
 
             cat.name_pl AS category_pl,
             cat.name_en AS category_en,
-            cat.icon_url,
+            CONCAT('assets/icons/', cat.icon_url) AS icon_url,
 
             s.name AS status
 
