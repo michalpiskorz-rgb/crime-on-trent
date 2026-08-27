@@ -2,6 +2,11 @@ const map = L.map('map', {
     zoomControl: true
 }).setView([53.0027, -2.1794], 12);
 
+
+// --------------------------------------------------
+// OPENSTREETMAP
+// --------------------------------------------------
+
 L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
@@ -11,32 +16,39 @@ L.tileLayer(
 ).addTo(map);
 
 
-// Homicide marker
-const homicideIcon = L.icon({
-    iconUrl: 'assets/icons/homicide.png',
-    iconSize: [50, 65],
-    iconAnchor: [25, 65],
-    popupAnchor: [0, -65]
+// --------------------------------------------------
+// MARKER ICONS
+// --------------------------------------------------
+
+const markerIcons = {};
+
+const iconNames = [
+    'homicide',
+    'burglary',
+    'arson',
+    'assault',
+    'robbery',
+    'theft',
+    'vehicle_theft',
+    'vandalism',
+    'car_accident',
+    'weapons',
+    'drugs_alcohol',
+    'dui',
+    'fraud',
+    'disturbing_peace',
+    'sex_crimes'
+];
+
+iconNames.forEach(name => {
+    markerIcons[name] = L.icon({
+        iconUrl: `assets/icons/${name}.png`,
+        iconSize: [50, 65],
+        iconAnchor: [25, 65],
+        popupAnchor: [0, -65]
+    });
 });
 
-
-const markerIcons = {
-    homicide: ...,
-    burglary: ...,
-    arson: ...,
-    assault: ...,
-    robbery: ...,
-    theft: ...,
-    vehicle_theft: ...,
-    vandalism: ...,
-    car_accident: ...,
-    weapons: ...,
-    drugs_alcohol: ...,
-    dui: ...,
-    fraud: ...,
-    disturbing_peace: ...,
-    sex_crimes: ...
-};
 
 // --------------------------------------------------
 // TEST CASES
@@ -52,6 +64,7 @@ const testCases = [
         longitude: -2.1794,
         description: "A fictional homicide case created for testing the Crime on Trent map."
     },
+
     {
         id: 2,
         title: "Burglary at Hanley Shop",
@@ -61,6 +74,7 @@ const testCases = [
         longitude: -2.1762,
         description: "A fictional burglary reported during the early morning hours."
     },
+
     {
         id: 3,
         title: "Vehicle Collision",
@@ -70,6 +84,7 @@ const testCases = [
         longitude: -2.1851,
         description: "A fictional road traffic collision used to test the accident marker."
     },
+
     {
         id: 4,
         title: "Fire at Abandoned Building",
@@ -79,6 +94,7 @@ const testCases = [
         longitude: -2.1718,
         description: "A fictional arson incident involving an abandoned property."
     },
+
     {
         id: 5,
         title: "Disturbance in Hanley",
@@ -92,7 +108,7 @@ const testCases = [
 
 
 // --------------------------------------------------
-// ADD TEST CASES TO MAP
+// ADD MARKERS
 // --------------------------------------------------
 
 testCases.forEach(caseItem => {
