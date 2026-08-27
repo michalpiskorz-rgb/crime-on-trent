@@ -2,9 +2,6 @@
 
 require_once __DIR__ . '/includes/db.php';
 
-/*
- * Sprawdzamy ID sprawy
- */
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 if ($id <= 0) {
@@ -13,9 +10,9 @@ if ($id <= 0) {
 
 
 /*
- * ---------------------------------------------------------
- * ZAPIS FORMULARZA
- * ---------------------------------------------------------
+ * =========================================================
+ * SAVE
+ * =========================================================
  */
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -28,20 +25,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die('Slug cannot be empty.');
     }
 
-
-    /*
-     * Rozpoczynamy transakcję.
-     *
-     * Dzięki temu cases i sources zostaną zapisane
-     * razem.
-     */
     $pdo->beginTransaction();
 
     try {
 
         /*
-         * Aktualizacja sprawy
+         * CASE
          */
+
         $stmt = $pdo->prepare("
             UPDATE cases
             SET
@@ -60,13 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
         /*
-         * -------------------------------------------------
+         * =================================================
          * SOURCES
-         * -------------------------------------------------
-         *
-         * Najprościej i najbezpieczniej:
-         * usuwamy stare źródła tej sprawy
-         * i zapisujemy aktualną listę.
+         * =================================================
          */
 
         $stmt = $pdo->prepare("
@@ -78,14 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':case_id' => $id
         ]);
 
-
-        /*
-         * Dodajemy źródła z formularza
-         */
-
         $source_titles = $_POST['source_title'] ?? [];
         $source_urls = $_POST['source_url'] ?? [];
-
 
         $stmt = $pdo->prepare("
             INSERT INTO sources
@@ -94,28 +75,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (:case_id, :title, :url)
         ");
 
-
         foreach ($source_urls as $index => $url) {
 
             $url = trim($url);
 
-            /*
-             * Puste URL pomijamy
-             */
             if ($url === '') {
                 continue;
             }
 
             $title = trim($source_titles[$index] ?? '');
 
-            /*
-             * Jeśli tytuł jest pusty,
-             * zapisujemy NULL.
-             */
             if ($title === '') {
                 $title = null;
             }
-
 
             $stmt->execute([
                 ':case_id' => $id,
@@ -126,24 +98,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
         /*
-         * Wszystko OK
+         * =================================================
+         * IMAGES
+         * =================================================
          */
-        $pdo->commit();
+
+        $stmt = $pdo->prepare("
+            DELETE FROM images
+            WHERE case_id = :case_id
+        ");
+
+        $stmt->execute([
+            ':case_id' => $id
+        ]);
+
+
+        $image_urls = $_POST['image_url'] ?? [];
+
+
+        $stmt = $pdo->prepare("
+            INSERT INTO images
+                (case_id, url)
+            VALUES
+                (:case_id, :url)
+        ");
+
+
+        foreach ($image_urls as $url) {
+
+            $url = trim($url);
+
+            /*
+             * Puste pola pomijamy
+             */
+
+            if ($url === '') {
+                continue;
+            }
+
+
+            $stmt->execute([
+                ':case_id' => $id,
+                ':url' => $url
+            ]);
+        }
 
 
         /*
-         * Wracamy do listy spraw
+         * Wszystko zapisane
          */
+
+        $pdo->commit();
+
         header('Location: cases.php');
         exit;
 
 
     } catch (Exception $e) {
 
-        /*
-         * Jeśli coś pójdzie nie tak,
-         * cofamy wszystkie zmiany.
-         */
         $pdo->rollBack();
 
         die(
@@ -159,9 +171,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
 /*
- * ---------------------------------------------------------
- * POBIERAMY SPRAWĘ
- * ---------------------------------------------------------
+ * =========================================================
+ * CASE
+ * =========================================================
  */
 
 $stmt = $pdo->prepare("
@@ -186,9 +198,9 @@ if (!$case) {
 
 
 /*
- * ---------------------------------------------------------
- * POBIERAMY KATEGORIE
- * ---------------------------------------------------------
+ * =========================================================
+ * CATEGORIES
+ * =========================================================
  */
 
 $stmt = $pdo->query("
@@ -204,9 +216,9 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 /*
- * ---------------------------------------------------------
- * POBIERAMY STATUSY
- * ---------------------------------------------------------
+ * =========================================================
+ * STATUSES
+ * =========================================================
  */
 
 $stmt = $pdo->query("
@@ -221,9 +233,9 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 /*
- * ---------------------------------------------------------
- * POBIERAMY SOURCES
- * ---------------------------------------------------------
+ * =========================================================
+ * SOURCES
+ * =========================================================
  */
 
 $stmt = $pdo->prepare("
@@ -241,6 +253,28 @@ $stmt->execute([
 ]);
 
 $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+/*
+ * =========================================================
+ * IMAGES
+ * =========================================================
+ */
+
+$stmt = $pdo->prepare("
+    SELECT
+        id,
+        url
+    FROM images
+    WHERE case_id = :case_id
+    ORDER BY id ASC
+");
+
+$stmt->execute([
+    ':case_id' => $id
+]);
+
+$images = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
 <!doctype html>
@@ -293,8 +327,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <ul class="navbar-nav pt-lg-3">
 
 
-                    <!-- Dashboard -->
-
                     <li class="nav-item">
 
                         <a
@@ -309,8 +341,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     </li>
 
-
-                    <!-- Cases -->
 
                     <li class="nav-item active">
 
@@ -327,8 +357,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </li>
 
 
-                    <!-- Add Case -->
-
                     <li class="nav-item">
 
                         <a
@@ -344,8 +372,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </li>
 
 
-                    <!-- DATA -->
-
                     <li class="nav-item mt-3">
 
                         <div class="nav-link disabled">
@@ -358,8 +384,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     </li>
 
-
-                    <!-- Categories -->
 
                     <li class="nav-item">
 
@@ -376,8 +400,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </li>
 
 
-                    <!-- Statuses -->
-
                     <li class="nav-item">
 
                         <a
@@ -392,8 +414,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     </li>
 
-
-                    <!-- Sources -->
 
                     <li class="nav-item">
 
@@ -410,8 +430,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </li>
 
 
-                    <!-- Images -->
-
                     <li class="nav-item">
 
                         <a
@@ -425,7 +443,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </a>
 
                     </li>
-
 
                 </ul>
 
@@ -443,14 +460,13 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="page-wrapper">
 
 
-        <!-- PAGE HEADER -->
+        <!-- HEADER -->
 
         <div class="page-header d-print-none">
 
             <div class="container-xl">
 
                 <div class="row align-items-center">
-
 
                     <div class="col">
 
@@ -466,7 +482,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     </div>
 
-
                 </div>
 
             </div>
@@ -475,12 +490,13 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
         <!-- =================================================
-             PAGE BODY
+             BODY
              ================================================= -->
 
         <div class="page-body">
 
             <div class="container-xl">
+
 
                 <form method="post">
 
@@ -494,9 +510,7 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                         <div class="col-lg-8">
 
-
                             <div class="card">
-
 
                                 <div class="card-header">
 
@@ -548,7 +562,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                             <?php foreach ($categories as $category): ?>
 
-
                                                 <option
                                                     value="<?= (int) $category['id'] ?>"
                                                     <?= (
@@ -575,7 +588,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                                 </option>
 
-
                                             <?php endforeach; ?>
 
 
@@ -600,7 +612,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                             <?php foreach ($statuses as $status): ?>
 
-
                                                 <option
                                                     value="<?= (int) $status['id'] ?>"
                                                     <?= (
@@ -620,7 +631,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                                 </option>
 
-
                                             <?php endforeach; ?>
 
 
@@ -631,9 +641,7 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                 </div>
 
-
                             </div>
-
 
                         </div>
 
@@ -644,23 +652,19 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                         <div class="col-lg-8">
 
-
                             <div class="card">
 
 
                                 <div class="card-header">
 
                                     <h3 class="card-title">
-
                                         Sources
-
                                     </h3>
 
                                 </div>
 
 
                                 <div class="card-body">
-
 
                                     <div id="sources-container">
 
@@ -670,20 +674,15 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                             <?php foreach ($sources as $source): ?>
 
-
                                                 <div class="source-row mb-4">
 
                                                     <div class="row g-2">
 
 
-                                                        <!-- TITLE -->
-
                                                         <div class="col-md-4">
 
                                                             <label class="form-label">
-
                                                                 Title
-
                                                             </label>
 
                                                             <input
@@ -699,14 +698,10 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                         </div>
 
 
-                                                        <!-- URL -->
-
                                                         <div class="col-md-7">
 
                                                             <label class="form-label">
-
                                                                 URL
-
                                                             </label>
 
                                                             <input
@@ -722,8 +717,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                                         </div>
 
-
-                                                        <!-- REMOVE -->
 
                                                         <div class="col-md-1">
 
@@ -746,14 +739,11 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                                 </div>
 
-
                                             <?php endforeach; ?>
 
 
                                         <?php else: ?>
 
-
-                                            <!-- EMPTY SOURCE -->
 
                                             <div class="source-row mb-4">
 
@@ -817,8 +807,6 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     </div>
 
 
-                                    <!-- ADD SOURCE -->
-
                                     <button
                                         type="button"
                                         id="add-source"
@@ -831,22 +819,164 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                 </div>
 
-
                             </div>
-
 
                         </div>
 
 
                         <!-- =================================================
-                             BUTTONS
+                             IMAGES
                              ================================================= -->
 
                         <div class="col-lg-8">
 
-
                             <div class="card">
 
+
+                                <div class="card-header">
+
+                                    <h3 class="card-title">
+                                        Images
+                                    </h3>
+
+                                </div>
+
+
+                                <div class="card-body">
+
+
+                                    <div id="images-container">
+
+
+                                        <?php if (count($images) > 0): ?>
+
+
+                                            <?php foreach ($images as $image): ?>
+
+                                                <div class="image-row mb-3">
+
+                                                    <div class="row g-2">
+
+
+                                                        <div class="col-md-11">
+
+                                                            <label class="form-label">
+                                                                Image URL
+                                                            </label>
+
+                                                            <input
+                                                                type="url"
+                                                                name="image_url[]"
+                                                                class="form-control"
+                                                                value="<?= htmlspecialchars(
+                                                                    $image['url'],
+                                                                    ENT_QUOTES,
+                                                                    'UTF-8'
+                                                                ) ?>"
+                                                                placeholder="https://...">
+
+                                                        </div>
+
+
+                                                        <div class="col-md-1">
+
+                                                            <label class="form-label">
+                                                                &nbsp;
+                                                            </label>
+
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-outline-danger w-100 remove-image">
+
+                                                                ×
+
+                                                            </button>
+
+                                                        </div>
+
+
+                                                    </div>
+
+                                                </div>
+
+                                            <?php endforeach; ?>
+
+
+                                        <?php else: ?>
+
+
+                                            <div class="image-row mb-3">
+
+                                                <div class="row g-2">
+
+
+                                                    <div class="col-md-11">
+
+                                                        <label class="form-label">
+                                                            Image URL
+                                                        </label>
+
+                                                        <input
+                                                            type="url"
+                                                            name="image_url[]"
+                                                            class="form-control"
+                                                            placeholder="https://...">
+
+                                                    </div>
+
+
+                                                    <div class="col-md-1">
+
+                                                        <label class="form-label">
+                                                            &nbsp;
+                                                        </label>
+
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-outline-danger w-100 remove-image">
+
+                                                            ×
+
+                                                        </button>
+
+                                                    </div>
+
+
+                                                </div>
+
+                                            </div>
+
+
+                                        <?php endif; ?>
+
+
+                                    </div>
+
+
+                                    <button
+                                        type="button"
+                                        id="add-image"
+                                        class="btn btn-outline-primary">
+
+                                        + Add image
+
+                                    </button>
+
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- =================================================
+                             SAVE
+                             ================================================= -->
+
+                        <div class="col-lg-8">
+
+                            <div class="card">
 
                                 <div class="card-footer d-flex">
 
@@ -871,15 +1001,12 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                 </div>
 
-
                             </div>
-
 
                         </div>
 
 
                     </div>
-
 
                 </form>
 
@@ -901,28 +1028,26 @@ $sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
 document.addEventListener('DOMContentLoaded', function () {
 
 
-    const container =
+    /*
+     * =====================================================
+     * SOURCES
+     * =====================================================
+     */
+
+    const sourcesContainer =
         document.getElementById('sources-container');
 
-
-    const addButton =
+    const addSourceButton =
         document.getElementById('add-source');
 
 
-    /*
-     * Dodawanie nowego źródła
-     */
-
-    addButton.addEventListener('click', function () {
-
+    addSourceButton.addEventListener('click', function () {
 
         const row =
             document.createElement('div');
 
-
         row.className =
             'source-row mb-4';
-
 
         row.innerHTML = `
 
@@ -977,18 +1102,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         `;
 
-
-        container.appendChild(row);
+        sourcesContainer.appendChild(row);
 
     });
 
 
-    /*
-     * Usuwanie źródła
-     */
-
-    container.addEventListener('click', function (event) {
-
+    sourcesContainer.addEventListener('click', function (event) {
 
         if (
             event.target.classList.contains('remove-source')
@@ -997,11 +1116,91 @@ document.addEventListener('DOMContentLoaded', function () {
             const row =
                 event.target.closest('.source-row');
 
+            if (row) {
+                row.remove();
+            }
+
+        }
+
+    });
+
+
+    /*
+     * =====================================================
+     * IMAGES
+     * =====================================================
+     */
+
+    const imagesContainer =
+        document.getElementById('images-container');
+
+    const addImageButton =
+        document.getElementById('add-image');
+
+
+    addImageButton.addEventListener('click', function () {
+
+        const row =
+            document.createElement('div');
+
+        row.className =
+            'image-row mb-3';
+
+        row.innerHTML = `
+
+            <div class="row g-2">
+
+                <div class="col-md-11">
+
+                    <label class="form-label">
+                        Image URL
+                    </label>
+
+                    <input
+                        type="url"
+                        name="image_url[]"
+                        class="form-control"
+                        placeholder="https://...">
+
+                </div>
+
+
+                <div class="col-md-1">
+
+                    <label class="form-label">
+                        &nbsp;
+                    </label>
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-danger w-100 remove-image">
+
+                        ×
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+        imagesContainer.appendChild(row);
+
+    });
+
+
+    imagesContainer.addEventListener('click', function (event) {
+
+        if (
+            event.target.classList.contains('remove-image')
+        ) {
+
+            const row =
+                event.target.closest('.image-row');
 
             if (row) {
-
                 row.remove();
-
             }
 
         }
