@@ -1,3 +1,8 @@
+<?php
+
+require_once __DIR__ . '/includes/auth.php';
+
+?>
 <!doctype html>
 <html lang="en">
 <head>
