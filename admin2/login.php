@@ -1,3 +1,76 @@
+<?php
+
+require_once __DIR__ . '/includes/db.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+
+/*
+ * Jeżeli już zalogowany,
+ * przejdź do Dashboardu.
+ */
+if (!empty($_SESSION['admin_user_id'])) {
+    header('Location: index.php');
+    exit;
+}
+
+
+$error = false;
+
+
+/*
+ * Obsługa formularza
+ */
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    if ($username === '' || $password === '') {
+
+        $error = true;
+
+    } else {
+
+        $stmt = $pdo->prepare("
+            SELECT id, username, password_hash
+            FROM admin_users
+            WHERE username = ?
+            LIMIT 1
+        ");
+
+        $stmt->execute([$username]);
+
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+
+        if (
+            $user &&
+            password_verify($password, $user['password_hash'])
+        ) {
+
+            /*
+             * Nowa sesja po poprawnym logowaniu.
+             */
+            session_regenerate_id(true);
+
+            $_SESSION['admin_user_id'] = (int) $user['id'];
+            $_SESSION['admin_username'] = $user['username'];
+
+            header('Location: index.php');
+            exit;
+
+        } else {
+
+            $error = true;
+
+        }
+    }
+}
+
+?>
 <!doctype html>
 
 <html lang="en">
@@ -41,23 +114,21 @@
                 </h2>
 
 
-                <!-- ERROR MESSAGE -->
+                <?php if ($error): ?>
 
-                <div class="alert alert-danger" role="alert">
+                    <div class="alert alert-danger" role="alert">
 
-                    <div>
                         Invalid username or password.
+
                     </div>
 
-                </div>
+                <?php endif; ?>
 
 
                 <form method="post"
                       action="login.php"
                       autocomplete="off">
 
-
-                    <!-- USERNAME -->
 
                     <div class="mb-3">
 
@@ -71,19 +142,16 @@
                             class="form-control"
                             placeholder="Your username"
                             autocomplete="username"
+                            required
                         >
 
                     </div>
 
 
-                    <!-- PASSWORD -->
-
                     <div class="mb-2">
 
                         <label class="form-label">
-
                             Password
-
                         </label>
 
                         <input
@@ -92,12 +160,11 @@
                             class="form-control"
                             placeholder="Your password"
                             autocomplete="current-password"
+                            required
                         >
 
                     </div>
 
-
-                    <!-- LOGIN -->
 
                     <div class="form-footer">
 
