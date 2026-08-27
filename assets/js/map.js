@@ -36,7 +36,7 @@ const iconNames = [
     'sex_crimes',
     'theft',
     'vandalism',
-    'car_accident',
+    'road_accident',
     'weapons'
 ];
 
@@ -79,7 +79,7 @@ const testCases = [
     {
         id: 3,
         title: "Vehicle Collision",
-        category: "car_accident",
+        category: "road_accident",
         date: "2025-09-21",
         latitude: 52.9985,
         longitude: -2.1851,
