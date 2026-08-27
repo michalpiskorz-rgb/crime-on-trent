@@ -6,58 +6,30 @@
 
     <title>Crime on Trent</title>
 
-    <!-- Leaflet -->
+    <!-- Leaflet CSS -->
     <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+    >
 
-    <style>
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            overflow: hidden;
-        }
-
-        #map {
-            width: 100%;
-            height: 100vh;
-        }
-
-        .leaflet-control-attribution {
-            font-size: 10px;
-        }
-    </style>
+    <!-- Our CSS -->
+    <link
+        rel="stylesheet"
+        href="assets/css/map.css"
+    >
 </head>
 
 <body>
 
 <div id="map"></div>
 
-<!-- Leaflet -->
+<!-- Leaflet JS -->
 <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 </script>
 
-<script>
-    const map = L.map('map', {
-        zoomControl: true
-    }).setView([53.0027, -2.1794], 12);
-
-    L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-        }
-    ).addTo(map);
-</script>
+<!-- Our JS -->
+<script src="assets/js/map.js"></script>
 
 </body>
 </html>
