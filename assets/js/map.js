@@ -23,21 +23,21 @@ L.tileLayer(
 const markerIcons = {};
 
 const iconNames = [
-    'homicide',
-    'burglary',
     'arson',
     'assault',
-    'robbery',
-    'theft',
-    'vehicle_theft',
-    'vandalism',
-    'car_accident',
-    'weapons',
-    'drugs_alcohol',
+    'burglary',
+    'disturbing_the_peace',
+    'drugs_alcohol_violations',
     'dui',
     'fraud',
-    'disturbing_peace',
-    'sex_crimes'
+    'homicide',
+    'motor_vehicle_theft',
+    'robbery',
+    'sex_crimes',
+    'theft',
+    'vandalism',
+    'car_accident',
+    'weapons'
 ];
 
 iconNames.forEach(name => {
@@ -99,7 +99,7 @@ const testCases = [
     {
         id: 5,
         title: "Disturbance in Hanley",
-        category: "disturbing_peace",
+        category: "disturbing_the_peace",
         date: "2026-01-18",
         latitude: 53.0102,
         longitude: -2.1755,
