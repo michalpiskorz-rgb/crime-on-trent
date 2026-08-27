@@ -12,6 +12,15 @@ try {
             c.slug,
             c.latitude,
             c.longitude,
+            c.event_date,
+
+            c.title_pl,
+            c.title_en,
+
+            c.description_pl,
+            c.description_en,
+
+            c.location,
 
             cat.name_pl AS category_pl,
             cat.name_en AS category_en,
@@ -39,8 +48,7 @@ try {
     echo json_encode(
         $cases,
         JSON_UNESCAPED_UNICODE |
-        JSON_UNESCAPED_SLASHES |
-        JSON_PRETTY_PRINT
+        JSON_UNESCAPED_SLASHES
     );
 
 } catch (PDOException $e) {
