@@ -22,13 +22,23 @@
 <body>
 
 <div id="language-switcher">
-    <button id="lang-en" class="language-button active" title="English">
+
+    <button
+        id="lang-en"
+        class="language-button active"
+        title="English"
+    >
         🇬🇧
     </button>
 
-    <button id="lang-pl" class="language-button" title="Polski">
+    <button
+        id="lang-pl"
+        class="language-button"
+        title="Polski"
+    >
         🇵🇱
     </button>
+
 </div>
 
 <div id="map"></div>
