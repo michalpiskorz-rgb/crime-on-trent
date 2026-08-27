@@ -9,3 +9,23 @@ L.tileLayer(
         attribution: '&copy; OpenStreetMap contributors'
     }
 ).addTo(map);
+
+
+// Homicide marker
+const homicideIcon = L.icon({
+    iconUrl: 'assets/icons/homicide.png',
+    iconSize: [50, 65],
+    iconAnchor: [25, 65],
+    popupAnchor: [0, -65]
+});
+
+
+// Test marker
+L.marker([53.0027, -2.1794], {
+    icon: homicideIcon
+})
+.addTo(map)
+.bindPopup(`
+    <strong>Test marker</strong><br>
+    Homicide
+`);
