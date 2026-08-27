@@ -29,3 +29,21 @@ L.marker([53.0027, -2.1794], {
     <strong>Test marker</strong><br>
     Homicide
 `);
+
+const markerIcons = {
+    homicide: ...,
+    burglary: ...,
+    arson: ...,
+    assault: ...,
+    robbery: ...,
+    theft: ...,
+    vehicle_theft: ...,
+    vandalism: ...,
+    car_accident: ...,
+    weapons: ...,
+    drugs_alcohol: ...,
+    dui: ...,
+    fraud: ...,
+    disturbing_peace: ...,
+    sex_crimes: ...
+};
