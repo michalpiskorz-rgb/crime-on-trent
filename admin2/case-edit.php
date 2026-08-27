@@ -13,8 +13,11 @@ if ($id <= 0) {
 
 
 /*
- * Obsługa formularza
+ * ---------------------------------------------------------
+ * ZAPIS FORMULARZA
+ * ---------------------------------------------------------
  */
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $slug = trim($_POST['slug'] ?? '');
@@ -25,35 +28,142 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die('Slug cannot be empty.');
     }
 
-    $sql = "
-        UPDATE cases
-        SET
-            slug = :slug,
-            category_id = :category_id,
-            status_id = :status_id
-        WHERE id = :id
-    ";
-
-    $stmt = $pdo->prepare($sql);
-
-    $stmt->execute([
-        ':slug' => $slug,
-        ':category_id' => $category_id,
-        ':status_id' => $status_id,
-        ':id' => $id
-    ]);
 
     /*
-     * Po zapisaniu wracamy do listy
+     * Rozpoczynamy transakcję.
+     *
+     * Dzięki temu cases i sources zostaną zapisane
+     * razem.
      */
-    header('Location: cases.php');
-    exit;
+    $pdo->beginTransaction();
+
+    try {
+
+        /*
+         * Aktualizacja sprawy
+         */
+        $stmt = $pdo->prepare("
+            UPDATE cases
+            SET
+                slug = :slug,
+                category_id = :category_id,
+                status_id = :status_id
+            WHERE id = :id
+        ");
+
+        $stmt->execute([
+            ':slug' => $slug,
+            ':category_id' => $category_id,
+            ':status_id' => $status_id,
+            ':id' => $id
+        ]);
+
+
+        /*
+         * -------------------------------------------------
+         * SOURCES
+         * -------------------------------------------------
+         *
+         * Najprościej i najbezpieczniej:
+         * usuwamy stare źródła tej sprawy
+         * i zapisujemy aktualną listę.
+         */
+
+        $stmt = $pdo->prepare("
+            DELETE FROM sources
+            WHERE case_id = :case_id
+        ");
+
+        $stmt->execute([
+            ':case_id' => $id
+        ]);
+
+
+        /*
+         * Dodajemy źródła z formularza
+         */
+
+        $source_titles = $_POST['source_title'] ?? [];
+        $source_urls = $_POST['source_url'] ?? [];
+
+
+        $stmt = $pdo->prepare("
+            INSERT INTO sources
+                (case_id, title, url)
+            VALUES
+                (:case_id, :title, :url)
+        ");
+
+
+        foreach ($source_urls as $index => $url) {
+
+            $url = trim($url);
+
+            /*
+             * Puste URL pomijamy
+             */
+            if ($url === '') {
+                continue;
+            }
+
+            $title = trim($source_titles[$index] ?? '');
+
+            /*
+             * Jeśli tytuł jest pusty,
+             * zapisujemy NULL.
+             */
+            if ($title === '') {
+                $title = null;
+            }
+
+
+            $stmt->execute([
+                ':case_id' => $id,
+                ':title' => $title,
+                ':url' => $url
+            ]);
+        }
+
+
+        /*
+         * Wszystko OK
+         */
+        $pdo->commit();
+
+
+        /*
+         * Wracamy do listy spraw
+         */
+        header('Location: cases.php');
+        exit;
+
+
+    } catch (Exception $e) {
+
+        /*
+         * Jeśli coś pójdzie nie tak,
+         * cofamy wszystkie zmiany.
+         */
+        $pdo->rollBack();
+
+        die(
+            'Error saving case: ' .
+            htmlspecialchars(
+                $e->getMessage(),
+                ENT_QUOTES,
+                'UTF-8'
+            )
+        );
+    }
 }
 
 
 /*
- * Pobieramy sprawę
+ * ---------------------------------------------------------
+ * POBIERAMY SPRAWĘ
+ * ---------------------------------------------------------
  */
+
 $stmt = $pdo->prepare("
     SELECT
         id,
@@ -76,8 +186,11 @@ if (!$case) {
 
 
 /*
- * Pobieramy kategorie
+ * ---------------------------------------------------------
+ * POBIERAMY KATEGORIE
+ * ---------------------------------------------------------
  */
+
 $stmt = $pdo->query("
     SELECT
         id,
@@ -91,8 +204,11 @@ $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 /*
- * Pobieramy statusy
+ * ---------------------------------------------------------
+ * POBIERAMY STATUSY
+ * ---------------------------------------------------------
  */
+
 $stmt = $pdo->query("
     SELECT
         id,
@@ -103,6 +219,29 @@ $stmt = $pdo->query("
 
 $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+
+/*
+ * ---------------------------------------------------------
+ * POBIERAMY SOURCES
+ * ---------------------------------------------------------
+ */
+
+$stmt = $pdo->prepare("
+    SELECT
+        id,
+        title,
+        url
+    FROM sources
+    WHERE case_id = :case_id
+    ORDER BY id ASC
+");
+
+$stmt->execute([
+    ':case_id' => $id
+]);
+
+$sources = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 <!doctype html>
 
@@ -112,14 +251,17 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <meta charset="utf-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1">
 
     <title>
         Edit Case — xcrime
     </title>
 
+
     <!-- Tabler -->
+
     <link
         href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css"
         rel="stylesheet">
@@ -132,11 +274,14 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <div class="page">
 
 
-    <!-- SIDEBAR -->
+    <!-- =====================================================
+         SIDEBAR
+         ===================================================== -->
 
     <aside class="navbar navbar-vertical navbar-expand-lg">
 
         <div class="container-fluid">
+
 
             <h1 class="navbar-brand navbar-brand-autodark">
                 xcrime
@@ -148,10 +293,13 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <ul class="navbar-nav pt-lg-3">
 
 
+                    <!-- Dashboard -->
+
                     <li class="nav-item">
 
-                        <a class="nav-link"
-                           href="index.php">
+                        <a
+                            class="nav-link"
+                            href="index.php">
 
                             <span class="nav-link-title">
                                 Dashboard
@@ -162,10 +310,13 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </li>
 
 
+                    <!-- Cases -->
+
                     <li class="nav-item active">
 
-                        <a class="nav-link"
-                           href="cases.php">
+                        <a
+                            class="nav-link"
+                            href="cases.php">
 
                             <span class="nav-link-title">
                                 Cases
@@ -176,10 +327,13 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </li>
 
 
+                    <!-- Add Case -->
+
                     <li class="nav-item">
 
-                        <a class="nav-link"
-                           href="case-add.php">
+                        <a
+                            class="nav-link"
+                            href="case-add.php">
 
                             <span class="nav-link-title">
                                 Add Case
@@ -189,6 +343,8 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     </li>
 
+
+                    <!-- DATA -->
 
                     <li class="nav-item mt-3">
 
@@ -203,10 +359,13 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </li>
 
 
+                    <!-- Categories -->
+
                     <li class="nav-item">
 
-                        <a class="nav-link"
-                           href="#">
+                        <a
+                            class="nav-link"
+                            href="#">
 
                             <span class="nav-link-title">
                                 Categories
@@ -217,10 +376,13 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </li>
 
 
+                    <!-- Statuses -->
+
                     <li class="nav-item">
 
-                        <a class="nav-link"
-                           href="#">
+                        <a
+                            class="nav-link"
+                            href="#">
 
                             <span class="nav-link-title">
                                 Statuses
@@ -231,10 +393,13 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </li>
 
 
+                    <!-- Sources -->
+
                     <li class="nav-item">
 
-                        <a class="nav-link"
-                           href="#">
+                        <a
+                            class="nav-link"
+                            href="#">
 
                             <span class="nav-link-title">
                                 Sources
@@ -245,10 +410,13 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </li>
 
 
+                    <!-- Images -->
+
                     <li class="nav-item">
 
-                        <a class="nav-link"
-                           href="#">
+                        <a
+                            class="nav-link"
+                            href="#">
 
                             <span class="nav-link-title">
                                 Images
@@ -257,6 +425,7 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </a>
 
                     </li>
+
 
                 </ul>
 
@@ -267,18 +436,21 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </aside>
 
 
-    <!-- MAIN -->
+    <!-- =====================================================
+         MAIN
+         ===================================================== -->
 
     <div class="page-wrapper">
 
 
-        <!-- HEADER -->
+        <!-- PAGE HEADER -->
 
         <div class="page-header d-print-none">
 
             <div class="container-xl">
 
                 <div class="row align-items-center">
+
 
                     <div class="col">
 
@@ -287,10 +459,13 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </h2>
 
                         <div class="text-secondary mt-1">
+
                             Case #<?= (int) $case['id'] ?>
+
                         </div>
 
                     </div>
+
 
                 </div>
 
@@ -299,138 +474,160 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
 
-        <!-- BODY -->
+        <!-- =================================================
+             PAGE BODY
+             ================================================= -->
 
         <div class="page-body">
 
             <div class="container-xl">
 
-                <div class="row row-cards">
-
-                    <div class="col-lg-8">
-
-                        <form method="post"
-                              class="card">
-
-                            <div class="card-header">
-
-                                <h3 class="card-title">
-                                    Case details
-                                </h3>
-
-                            </div>
+                <form method="post">
 
 
-                            <div class="card-body">
+                    <div class="row row-cards">
 
 
-                                <!-- SLUG -->
+                        <!-- =================================================
+                             CASE DETAILS
+                             ================================================= -->
 
-                                <div class="mb-3">
+                        <div class="col-lg-8">
 
-                                    <label class="form-label">
-                                        Slug
-                                    </label>
 
-                                    <input
-                                        type="text"
-                                        name="slug"
-                                        class="form-control"
-                                        value="<?= htmlspecialchars(
-                                            $case['slug'],
-                                            ENT_QUOTES,
-                                            'UTF-8'
-                                        ) ?>"
-                                        required>
+                            <div class="card">
+
+
+                                <div class="card-header">
+
+                                    <h3 class="card-title">
+                                        Case details
+                                    </h3>
 
                                 </div>
 
 
-                                <!-- CATEGORY -->
-
-                                <div class="mb-3">
-
-                                    <label class="form-label">
-                                        Category
-                                    </label>
-
-                                    <select
-                                        name="category_id"
-                                        class="form-select"
-                                        required>
-
-                                        <?php foreach ($categories as $category): ?>
-
-                                            <option
-                                                value="<?= (int) $category['id'] ?>"
-                                                <?= (
-                                                    (int) $category['id']
-                                                    ===
-                                                    (int) $case['category_id']
-                                                )
-                                                ? 'selected'
-                                                : ''
-                                                ?>>
-
-                                                <?= htmlspecialchars(
-                                                    $category['name_en'],
-                                                    ENT_QUOTES,
-                                                    'UTF-8'
-                                                ) ?>
-
-                                                —
-                                                <?= htmlspecialchars(
-                                                    $category['name_pl'],
-                                                    ENT_QUOTES,
-                                                    'UTF-8'
-                                                ) ?>
-
-                                            </option>
-
-                                        <?php endforeach; ?>
-
-                                    </select>
-
-                                </div>
+                                <div class="card-body">
 
 
-                                <!-- STATUS -->
+                                    <!-- SLUG -->
 
-                                <div class="mb-3">
+                                    <div class="mb-3">
 
-                                    <label class="form-label">
-                                        Status
-                                    </label>
+                                        <label class="form-label">
+                                            Slug
+                                        </label>
 
-                                    <select
-                                        name="status_id"
-                                        class="form-select"
-                                        required>
+                                        <input
+                                            type="text"
+                                            name="slug"
+                                            class="form-control"
+                                            value="<?= htmlspecialchars(
+                                                $case['slug'],
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            ) ?>"
+                                            required>
 
-                                        <?php foreach ($statuses as $status): ?>
+                                    </div>
 
-                                            <option
-                                                value="<?= (int) $status['id'] ?>"
-                                                <?= (
-                                                    (int) $status['id']
-                                                    ===
-                                                    (int) $case['status_id']
-                                                )
-                                                ? 'selected'
-                                                : ''
-                                                ?>>
 
-                                                <?= htmlspecialchars(
-                                                    ucfirst($status['name']),
-                                                    ENT_QUOTES,
-                                                    'UTF-8'
-                                                ) ?>
+                                    <!-- CATEGORY -->
 
-                                            </option>
+                                    <div class="mb-3">
 
-                                        <?php endforeach; ?>
+                                        <label class="form-label">
+                                            Category
+                                        </label>
 
-                                    </select>
+                                        <select
+                                            name="category_id"
+                                            class="form-select"
+                                            required>
+
+
+                                            <?php foreach ($categories as $category): ?>
+
+
+                                                <option
+                                                    value="<?= (int) $category['id'] ?>"
+                                                    <?= (
+                                                        (int) $category['id']
+                                                        ===
+                                                        (int) $case['category_id']
+                                                    )
+                                                    ? 'selected'
+                                                    : ''
+                                                    ?>>
+
+                                                    <?= htmlspecialchars(
+                                                        $category['name_en'],
+                                                        ENT_QUOTES,
+                                                        'UTF-8'
+                                                    ) ?>
+
+                                                    —
+                                                    <?= htmlspecialchars(
+                                                        $category['name_pl'],
+                                                        ENT_QUOTES,
+                                                        'UTF-8'
+                                                    ) ?>
+
+                                                </option>
+
+
+                                            <?php endforeach; ?>
+
+
+                                        </select>
+
+                                    </div>
+
+
+                                    <!-- STATUS -->
+
+                                    <div class="mb-3">
+
+                                        <label class="form-label">
+                                            Status
+                                        </label>
+
+                                        <select
+                                            name="status_id"
+                                            class="form-select"
+                                            required>
+
+
+                                            <?php foreach ($statuses as $status): ?>
+
+
+                                                <option
+                                                    value="<?= (int) $status['id'] ?>"
+                                                    <?= (
+                                                        (int) $status['id']
+                                                        ===
+                                                        (int) $case['status_id']
+                                                    )
+                                                    ? 'selected'
+                                                    : ''
+                                                    ?>>
+
+                                                    <?= htmlspecialchars(
+                                                        ucfirst($status['name']),
+                                                        ENT_QUOTES,
+                                                        'UTF-8'
+                                                    ) ?>
+
+                                                </option>
+
+
+                                            <?php endforeach; ?>
+
+
+                                        </select>
+
+                                    </div>
+
 
                                 </div>
 
@@ -438,32 +635,253 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
 
 
-                            <div class="card-footer d-flex">
-
-                                <a
-                                    href="cases.php"
-                                    class="btn btn-link">
-
-                                    Cancel
-
-                                </a>
+                        </div>
 
 
-                                <button
-                                    type="submit"
-                                    class="btn btn-primary ms-auto">
+                        <!-- =================================================
+                             SOURCES
+                             ================================================= -->
 
-                                    Save changes
+                        <div class="col-lg-8">
 
-                                </button>
+
+                            <div class="card">
+
+
+                                <div class="card-header">
+
+                                    <h3 class="card-title">
+
+                                        Sources
+
+                                    </h3>
+
+                                </div>
+
+
+                                <div class="card-body">
+
+
+                                    <div id="sources-container">
+
+
+                                        <?php if (count($sources) > 0): ?>
+
+
+                                            <?php foreach ($sources as $source): ?>
+
+
+                                                <div class="source-row mb-4">
+
+                                                    <div class="row g-2">
+
+
+                                                        <!-- TITLE -->
+
+                                                        <div class="col-md-4">
+
+                                                            <label class="form-label">
+
+                                                                Title
+
+                                                            </label>
+
+                                                            <input
+                                                                type="text"
+                                                                name="source_title[]"
+                                                                class="form-control"
+                                                                value="<?= htmlspecialchars(
+                                                                    $source['title'] ?? '',
+                                                                    ENT_QUOTES,
+                                                                    'UTF-8'
+                                                                ) ?>">
+
+                                                        </div>
+
+
+                                                        <!-- URL -->
+
+                                                        <div class="col-md-7">
+
+                                                            <label class="form-label">
+
+                                                                URL
+
+                                                            </label>
+
+                                                            <input
+                                                                type="url"
+                                                                name="source_url[]"
+                                                                class="form-control"
+                                                                value="<?= htmlspecialchars(
+                                                                    $source['url'],
+                                                                    ENT_QUOTES,
+                                                                    'UTF-8'
+                                                                ) ?>"
+                                                                placeholder="https://...">
+
+                                                        </div>
+
+
+                                                        <!-- REMOVE -->
+
+                                                        <div class="col-md-1">
+
+                                                            <label class="form-label">
+                                                                &nbsp;
+                                                            </label>
+
+                                                            <button
+                                                                type="button"
+                                                                class="btn btn-outline-danger w-100 remove-source">
+
+                                                                ×
+
+                                                            </button>
+
+                                                        </div>
+
+
+                                                    </div>
+
+                                                </div>
+
+
+                                            <?php endforeach; ?>
+
+
+                                        <?php else: ?>
+
+
+                                            <!-- EMPTY SOURCE -->
+
+                                            <div class="source-row mb-4">
+
+                                                <div class="row g-2">
+
+
+                                                    <div class="col-md-4">
+
+                                                        <label class="form-label">
+                                                            Title
+                                                        </label>
+
+                                                        <input
+                                                            type="text"
+                                                            name="source_title[]"
+                                                            class="form-control">
+
+                                                    </div>
+
+
+                                                    <div class="col-md-7">
+
+                                                        <label class="form-label">
+                                                            URL
+                                                        </label>
+
+                                                        <input
+                                                            type="url"
+                                                            name="source_url[]"
+                                                            class="form-control"
+                                                            placeholder="https://...">
+
+                                                    </div>
+
+
+                                                    <div class="col-md-1">
+
+                                                        <label class="form-label">
+                                                            &nbsp;
+                                                        </label>
+
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-outline-danger w-100 remove-source">
+
+                                                            ×
+
+                                                        </button>
+
+                                                    </div>
+
+
+                                                </div>
+
+                                            </div>
+
+
+                                        <?php endif; ?>
+
+
+                                    </div>
+
+
+                                    <!-- ADD SOURCE -->
+
+                                    <button
+                                        type="button"
+                                        id="add-source"
+                                        class="btn btn-outline-primary">
+
+                                        + Add source
+
+                                    </button>
+
+
+                                </div>
+
 
                             </div>
 
-                        </form>
+
+                        </div>
+
+
+                        <!-- =================================================
+                             BUTTONS
+                             ================================================= -->
+
+                        <div class="col-lg-8">
+
+
+                            <div class="card">
+
+
+                                <div class="card-footer d-flex">
+
+
+                                    <a
+                                        href="cases.php"
+                                        class="btn btn-link">
+
+                                        Cancel
+
+                                    </a>
+
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary ms-auto">
+
+                                        Save changes
+
+                                    </button>
+
+
+                                </div>
+
+
+                            </div>
+
+
+                        </div>
+
 
                     </div>
 
-                </div>
+
+                </form>
 
             </div>
 
@@ -474,11 +892,134 @@ $statuses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 
+<!-- =========================================================
+     JAVASCRIPT
+     ========================================================= -->
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+
+    const container =
+        document.getElementById('sources-container');
+
+
+    const addButton =
+        document.getElementById('add-source');
+
+
+    /*
+     * Dodawanie nowego źródła
+     */
+
+    addButton.addEventListener('click', function () {
+
+
+        const row =
+            document.createElement('div');
+
+
+        row.className =
+            'source-row mb-4';
+
+
+        row.innerHTML = `
+
+            <div class="row g-2">
+
+                <div class="col-md-4">
+
+                    <label class="form-label">
+                        Title
+                    </label>
+
+                    <input
+                        type="text"
+                        name="source_title[]"
+                        class="form-control">
+
+                </div>
+
+
+                <div class="col-md-7">
+
+                    <label class="form-label">
+                        URL
+                    </label>
+
+                    <input
+                        type="url"
+                        name="source_url[]"
+                        class="form-control"
+                        placeholder="https://...">
+
+                </div>
+
+
+                <div class="col-md-1">
+
+                    <label class="form-label">
+                        &nbsp;
+                    </label>
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-danger w-100 remove-source">
+
+                        ×
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        container.appendChild(row);
+
+    });
+
+
+    /*
+     * Usuwanie źródła
+     */
+
+    container.addEventListener('click', function (event) {
+
+
+        if (
+            event.target.classList.contains('remove-source')
+        ) {
+
+            const row =
+                event.target.closest('.source-row');
+
+
+            if (row) {
+
+                row.remove();
+
+            }
+
+        }
+
+    });
+
+
+});
+
+</script>
+
+
 <!-- Tabler JS -->
 
 <script
     src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js">
 </script>
+
 
 </body>
 
