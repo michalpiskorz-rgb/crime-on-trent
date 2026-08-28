@@ -1,8 +1,8 @@
 <?php
 
-/*
- * Bezpieczna konfiguracja sesji
- */
+// --------------------------------------------------
+// SECURE SESSION
+// --------------------------------------------------
 
 if (session_status() === PHP_SESSION_NONE) {
 
@@ -18,13 +18,12 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 
-/*
- * Sprawdzenie logowania
- */
+// --------------------------------------------------
+// AUTHENTICATION
+// --------------------------------------------------
 
 if (empty($_SESSION['admin_user_id'])) {
 
-    header('Location: /admin2/login.php');
-
+    header('Location: ../login.php');
     exit;
 }
