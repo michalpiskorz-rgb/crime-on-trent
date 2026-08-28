@@ -1,0 +1,96 @@
+/* ==================================================
+   xcrime Admin
+   Custom CSS
+   ================================================== */
+
+
+/* --------------------------------------------------
+   BODY
+   -------------------------------------------------- */
+
+body {
+    background: #f5f7fb;
+}
+
+
+/* --------------------------------------------------
+   SIDEBAR
+   -------------------------------------------------- */
+
+.navbar-vertical {
+    min-height: 100vh;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+
+/* --------------------------------------------------
+   PAGE
+   -------------------------------------------------- */
+
+.page-wrapper {
+    min-height: 100vh;
+}
+
+
+/* --------------------------------------------------
+   DASHBOARD CARDS
+   -------------------------------------------------- */
+
+.dashboard-card {
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+
+/* --------------------------------------------------
+   STAT ICON
+   -------------------------------------------------- */
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 8px;
+
+    background: var(
+        --tblr-bg-surface-secondary
+    );
+}
+
+
+/* --------------------------------------------------
+   RECENT CASES
+   -------------------------------------------------- */
+
+.card-table td {
+    vertical-align: middle;
+}
+
+
+/* --------------------------------------------------
+   MOBILE
+   -------------------------------------------------- */
+
+@media (max-width: 991.98px) {
+
+    .navbar-vertical {
+        min-height: auto;
+    }
+
+}
