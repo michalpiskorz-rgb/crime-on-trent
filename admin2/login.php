@@ -3,9 +3,9 @@
 require_once __DIR__ . '/includes/db.php';
 
 
-// --------------------------------------------------
+// ==================================================
 // SECURE SESSION
-// --------------------------------------------------
+// ==================================================
 
 if (session_status() === PHP_SESSION_NONE) {
 
@@ -21,9 +21,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 
-// --------------------------------------------------
+// ==================================================
 // ALREADY LOGGED IN
-// --------------------------------------------------
+// ==================================================
 
 if (!empty($_SESSION['admin_user_id'])) {
 
@@ -32,41 +32,32 @@ if (!empty($_SESSION['admin_user_id'])) {
 }
 
 
-// --------------------------------------------------
+// ==================================================
 // CSRF TOKEN
-// --------------------------------------------------
+// ==================================================
 
-if (empty($_SESSION['login_csrf_token'])) {
+if (empty($_SESSION['csrf_token'])) {
 
-    $_SESSION['login_csrf_token'] =
+    $_SESSION['csrf_token'] =
         bin2hex(random_bytes(32));
 }
 
 
-// --------------------------------------------------
-// LOGIN ATTEMPT LIMIT
-// --------------------------------------------------
+// ==================================================
+// VARIABLES
+// ==================================================
 
-// Maximum failed attempts during one session
-$maxAttempts = 5;
-
-if (!isset($_SESSION['login_attempts'])) {
-    $_SESSION['login_attempts'] = 0;
-}
+$error = '';
 
 
-$error = false;
-
-
-// --------------------------------------------------
+// ==================================================
 // LOGIN
-// --------------------------------------------------
+// ==================================================
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-
     // --------------------------------------------------
-    // CHECK CSRF
+    // Check CSRF
     // --------------------------------------------------
 
     $csrfToken =
@@ -74,30 +65,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (
         !hash_equals(
-            $_SESSION['login_csrf_token'],
+            $_SESSION['csrf_token'],
             $csrfToken
         )
     ) {
 
-        $error = true;
+        $error = 'Invalid request. Please try again.';
 
-    }
+    } else {
 
-
-    // --------------------------------------------------
-    // CHECK ATTEMPT LIMIT
-    // --------------------------------------------------
-
-    elseif (
-        $_SESSION['login_attempts'] >= $maxAttempts
-    ) {
-
-        $error = true;
-
-    }
-
-
-    else {
+        // --------------------------------------------------
+        // Get form data
+        // --------------------------------------------------
 
         $username =
             trim($_POST['username'] ?? '');
@@ -106,16 +85,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['password'] ?? '';
 
 
+        // --------------------------------------------------
+        // Validate
+        // --------------------------------------------------
+
         if (
             $username === '' ||
             $password === ''
         ) {
 
-            $error = true;
+            $error =
+                'Please enter your username and password.';
 
-        }
+        } else {
 
-        else {
+            // --------------------------------------------------
+            // Find user
+            // --------------------------------------------------
 
             $stmt = $pdo->prepare("
                 SELECT
@@ -136,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
             // --------------------------------------------------
-            // VERIFY PASSWORD
+            // Verify password
             // --------------------------------------------------
 
             if (
@@ -147,9 +133,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 )
             ) {
 
-                // New session ID after successful login
+                // --------------------------------------------------
+                // New session ID
+                // --------------------------------------------------
+
                 session_regenerate_id(true);
 
+
+                // --------------------------------------------------
+                // Store user in session
+                // --------------------------------------------------
 
                 $_SESSION['admin_user_id'] =
                     (int) $user['id'];
@@ -158,33 +151,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $user['username'];
 
 
-                // Reset failed attempts
-                $_SESSION['login_attempts'] = 0;
+                // --------------------------------------------------
+                // New CSRF token
+                // --------------------------------------------------
 
-
-                // Generate a new CSRF token
-                $_SESSION['login_csrf_token'] =
+                $_SESSION['csrf_token'] =
                     bin2hex(random_bytes(32));
 
+
+                // --------------------------------------------------
+                // Dashboard
+                // --------------------------------------------------
 
                 header('Location: index.php');
                 exit;
 
-            }
+            } else {
 
-            else {
-
-                // Failed login
-                $_SESSION['login_attempts']++;
-
-                $error = true;
+                $error =
+                    'Invalid username or password.';
 
             }
-
         }
-
     }
-
 }
 
 ?>
@@ -196,11 +185,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <meta charset="utf-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
 
-    <title>Login — xcrime</title>
+    <title>xcrime — Login</title>
 
 
     <!-- Tabler -->
@@ -225,161 +213,149 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="text-center mb-4">
 
-            <h1 class="navbar-brand navbar-brand-autodark">
-                xcrime
-            </h1>
+            <div class="navbar-brand navbar-brand-autodark">
 
-        </div>
-
-
-        <!-- LOGIN CARD -->
-
-        <div class="card card-md">
-
-            <div class="card-body">
-
-
-                <h2 class="h2 text-center mb-4">
-
-                    Login to your account
-
-                </h2>
-
-
-                <?php if ($error): ?>
-
-                    <div
-                        class="alert alert-danger"
-                        role="alert"
-                    >
-
-                        Invalid username or password.
-
-                    </div>
-
-                <?php endif; ?>
-
-
-                <?php if (
-                    $_SESSION['login_attempts']
-                    >= $maxAttempts
-                ): ?>
-
-                    <div
-                        class="alert alert-warning"
-                        role="alert"
-                    >
-
-                        Too many failed login attempts.
-                        Please start a new session.
-
-                    </div>
-
-                <?php endif; ?>
-
-
-                <form
-                    method="post"
-                    action="login.php"
-                    autocomplete="off"
-                >
-
-
-                    <!-- CSRF -->
-
-                    <input
-                        type="hidden"
-                        name="csrf_token"
-                        value="<?= htmlspecialchars(
-                            $_SESSION['login_csrf_token'],
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>"
-                    >
-
-
-                    <!-- USERNAME -->
-
-                    <div class="mb-3">
-
-                        <label class="form-label">
-
-                            Username
-
-                        </label>
-
-
-                        <input
-                            type="text"
-                            name="username"
-                            class="form-control"
-                            placeholder="Your username"
-                            autocomplete="username"
-                            required
-                        >
-
-                    </div>
-
-
-                    <!-- PASSWORD -->
-
-                    <div class="mb-2">
-
-                        <label class="form-label">
-
-                            Password
-
-                        </label>
-
-
-                        <input
-                            type="password"
-                            name="password"
-                            class="form-control"
-                            placeholder="Your password"
-                            autocomplete="current-password"
-                            required
-                        >
-
-                    </div>
-
-
-                    <!-- BUTTON -->
-
-                    <div class="form-footer">
-
-                        <button
-                            type="submit"
-                            class="btn btn-primary w-100"
-                            <?php
-                            if (
-                                $_SESSION['login_attempts']
-                                >= $maxAttempts
-                            ) {
-                                echo 'disabled';
-                            }
-                            ?>
-                        >
-
-                            Login
-
-                        </button>
-
-                    </div>
-
-
-                </form>
+                <span class="h1">
+                    xcrime
+                </span>
 
             </div>
 
         </div>
 
 
-        <div
-            class="text-center text-secondary mt-3"
+        <!-- LOGIN CARD -->
+
+        <form
+            class="card card-md"
+            method="post"
+            action="login.php"
+            autocomplete="off"
         >
 
-            xcrime administration panel
+            <div class="card-body">
+
+
+                <!-- TITLE -->
+
+                <h2 class="h2 text-center mb-4">
+                    Login to xcrime Admin
+                </h2>
+
+
+                <!-- ERROR -->
+
+                <?php if ($error !== ''): ?>
+
+                    <div
+                        class="alert alert-danger"
+                        role="alert"
+                    >
+
+                        <div>
+
+                            <?= htmlspecialchars(
+                                $error,
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ) ?>
+
+                        </div>
+
+                    </div>
+
+                <?php endif; ?>
+
+
+                <!-- CSRF -->
+
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="<?= htmlspecialchars(
+                        $_SESSION['csrf_token'],
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>"
+                >
+
+
+                <!-- USERNAME -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+
+                        Username
+
+                    </label>
+
+                    <input
+                        type="text"
+                        name="username"
+                        class="form-control"
+                        placeholder="Username"
+                        autocomplete="username"
+                        value="<?= htmlspecialchars(
+                            $_POST['username'] ?? '',
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ) ?>"
+                        required
+                        autofocus
+                    >
+
+                </div>
+
+
+                <!-- PASSWORD -->
+
+                <div class="mb-3">
+
+                    <label class="form-label">
+
+                        Password
+
+                    </label>
+
+
+                    <input
+                        type="password"
+                        name="password"
+                        class="form-control"
+                        placeholder="Password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- LOGIN BUTTON -->
+
+                <div class="form-footer">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100"
+                    >
+
+                        Login
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+
+        <!-- FOOTER -->
+
+        <div class="text-center text-secondary mt-3">
+
+            xcrime Admin
 
         </div>
 
@@ -388,6 +364,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 </div>
 
+
+<!-- Tabler JS -->
 
 <script
     src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js">
