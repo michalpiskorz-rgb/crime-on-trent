@@ -117,158 +117,94 @@ $recentCases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 <ul class="navbar-nav pt-lg-3">
 
+    <!-- DASHBOARD -->
 
-                    <!-- DASHBOARD -->
+    <li class="nav-item active">
 
-                    <li class="nav-item active">
+        <a class="nav-link" href="index.php">
 
-                        <a class="nav-link"
-                           href="index.php">
+            <span class="nav-link-title">
+                Dashboard
+            </span>
 
-                            <span class="nav-link-icon">
+        </a>
 
-                                <svg xmlns="http://www.w3.org/2000/svg"
-                                     width="24"
-                                     height="24"
-                                     viewBox="0 0 24 24"
-                                     fill="none"
-                                     stroke="currentColor"
-                                     stroke-width="2">
+    </li>
 
-                                    <path d="M5 12l-2 0l9-9l9 9l-2 0"/>
 
-                                    <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>
+    <!-- CASES -->
 
-                                </svg>
+    <li class="nav-item">
 
-                            </span>
+        <a class="nav-link" href="cases.php">
 
-                            <span class="nav-link-title">
-                                Dashboard
-                            </span>
+            <span class="nav-link-title">
+                All Cases
+            </span>
 
-                        </a>
+        </a>
 
-                    </li>
+    </li>
 
 
-                    <!-- CASES -->
+    <li class="nav-item">
 
-                    <li class="nav-item">
+        <a class="nav-link" href="case-add.php">
 
-                        <a class="nav-link"
-                           href="cases.php">
+            <span class="nav-link-title">
+                Add Case
+            </span>
 
-                            <span class="nav-link-title">
-                                All Cases
-                            </span>
+        </a>
 
-                        </a>
+    </li>
 
-                    </li>
 
+    <!-- DATA -->
 
-                    <li class="nav-item">
+    <li class="nav-item mt-3">
 
-                        <a class="nav-link"
-                           href="case-add.php">
+        <div class="nav-link disabled">
 
-                            <span class="nav-link-title">
-                                Add Case
-                            </span>
+            <span class="nav-link-title">
+                DATA
+            </span>
 
-                        </a>
+        </div>
 
-                    </li>
+    </li>
 
 
-                    <!-- DATA -->
+    <!-- IMAGES -->
 
-                    <li class="nav-item mt-3">
+    <li class="nav-item">
 
-                        <div class="nav-link disabled">
+        <a class="nav-link" href="images.php">
 
-                            <span class="nav-link-title">
-                                DATA
-                            </span>
+            <span class="nav-link-title">
+                Images
+            </span>
 
-                        </div>
+        </a>
 
-                    </li>
+    </li>
 
 
-                    <li class="nav-item">
+    <!-- ACCOUNT -->
 
-                        <a class="nav-link"
-                           href="categories.php">
+    <li class="nav-item mt-4">
 
-                            <span class="nav-link-title">
-                                Categories
-                            </span>
+        <a class="nav-link" href="logout.php">
 
-                        </a>
+            <span class="nav-link-title">
+                Logout
+            </span>
 
-                    </li>
+        </a>
 
+    </li>
 
-                    <li class="nav-item">
-
-                        <a class="nav-link"
-                           href="statuses.php">
-
-                            <span class="nav-link-title">
-                                Statuses
-                            </span>
-
-                        </a>
-
-                    </li>
-
-
-                    <li class="nav-item">
-
-                        <a class="nav-link"
-                           href="sources.php">
-
-                            <span class="nav-link-title">
-                                Sources
-                            </span>
-
-                        </a>
-
-                    </li>
-
-
-                    <li class="nav-item">
-
-                        <a class="nav-link"
-                           href="images.php">
-
-                            <span class="nav-link-title">
-                                Images
-                            </span>
-
-                        </a>
-
-                    </li>
-
-
-                    <!-- ACCOUNT -->
-
-                    <li class="nav-item mt-4">
-
-                        <a class="nav-link"
-                           href="logout.php">
-
-                            <span class="nav-link-title">
-                                Logout
-                            </span>
-
-                        </a>
-
-                    </li>
-
-                </ul>
+</ul>
 
             </div>
 
