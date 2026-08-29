@@ -1,6 +1,8 @@
+```php
 <?php
 
 require_once __DIR__ . '/../config/db.php';
+
 
 /*
 |--------------------------------------------------------------------------
@@ -17,7 +19,7 @@ $sql = "
         c.location,
         c.updated_at,
 
-        cat.name AS category_name,
+        cat.name_en AS category_name,
         s.name AS status_name
 
     FROM cases c
@@ -31,15 +33,18 @@ $sql = "
     ORDER BY c.id DESC
 ";
 
+
 $stmt = $pdo->query($sql);
 
 $cases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
 
+
 <!doctype html>
 
 <html lang="en">
+
 
 <head>
 
@@ -50,7 +55,9 @@ $cases = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <title>Cases - Admin</title>
 
 
-    <!-- Tabler -->
+    <!-- =========================================================
+         TABLER
+    ========================================================== -->
 
     <link
         rel="stylesheet"
@@ -58,7 +65,9 @@ $cases = $stmt->fetchAll(PDO::FETCH_ASSOC);
     >
 
 
-    <!-- DataTables -->
+    <!-- =========================================================
+         DATATABLES
+    ========================================================== -->
 
     <link
         rel="stylesheet"
@@ -66,7 +75,9 @@ $cases = $stmt->fetchAll(PDO::FETCH_ASSOC);
     >
 
 
-    <!-- DataTables Responsive -->
+    <!-- =========================================================
+         DATATABLES RESPONSIVE
+    ========================================================== -->
 
     <link
         rel="stylesheet"
@@ -76,27 +87,79 @@ $cases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <style>
 
+        /*
+        |--------------------------------------------------------------------------
+        | Table
+        |--------------------------------------------------------------------------
+        */
+
         #casesTable {
+
             width: 100% !important;
+
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Vertical alignment
+        |--------------------------------------------------------------------------
+        */
 
         #casesTable td {
+
             vertical-align: middle;
+
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Titles
+        |--------------------------------------------------------------------------
+        */
 
         .case-title {
+
             max-width: 350px;
+
         }
 
+
         .case-title-text {
+
             overflow: hidden;
+
             text-overflow: ellipsis;
+
             white-space: nowrap;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Location
+        |--------------------------------------------------------------------------
+        */
+
+        .case-location {
+
+            max-width: 200px;
+
+            overflow: hidden;
+
+            text-overflow: ellipsis;
+
+            white-space: nowrap;
+
         }
 
     </style>
 
+
 </head>
+
 
 
 <body>
@@ -105,7 +168,9 @@ $cases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <div class="page">
 
 
-    <!-- Page header -->
+    <!-- =========================================================
+         PAGE HEADER
+    ========================================================== -->
 
     <div class="page-header d-print-none">
 
@@ -113,29 +178,43 @@ $cases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="row g-2 align-items-center">
 
+
                 <div class="col">
 
+
                     <div class="page-pretitle">
+
                         Administration
+
                     </div>
 
+
                     <h2 class="page-title">
+
                         Cases
+
                     </h2>
+
 
                 </div>
 
 
+
                 <div class="col-auto ms-auto">
+
 
                     <a
                         href="case-edit.php"
                         class="btn btn-primary"
                     >
+
                         + Add Case
+
                     </a>
 
+
                 </div>
+
 
             </div>
 
@@ -145,7 +224,9 @@ $cases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 
-    <!-- Page body -->
+    <!-- =========================================================
+         PAGE BODY
+    ========================================================== -->
 
     <div class="page-body">
 
@@ -155,179 +236,226 @@ $cases = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="card">
 
 
+                <!-- =================================================
+                     CARD HEADER
+                ================================================== -->
+
                 <div class="card-header">
 
+
                     <h3 class="card-title">
-                        Cases
+
+                        Cases database
+
                     </h3>
+
 
                 </div>
 
+
+
+                <!-- =================================================
+                     CARD BODY
+                ================================================== -->
 
                 <div class="card-body">
 
 
-                    <table
-                        id="casesTable"
-                        class="display responsive nowrap"
-                    >
-
-                        <thead>
-
-                            <tr>
-
-                                <th>ID</th>
-
-                                <th>Date</th>
-
-                                <th>Title PL</th>
-
-                                <th>Title EN</th>
-
-                                <th>Category</th>
-
-                                <th>Location</th>
-
-                                <th>Status</th>
-
-                                <th>Updated</th>
-
-                                <th>Actions</th>
-
-                            </tr>
-
-                        </thead>
+                    <div class="table-responsive">
 
 
-                        <tbody>
+                        <table
+                            id="casesTable"
+                            class="display responsive nowrap"
+                        >
 
 
-                        <?php foreach ($cases as $case): ?>
+                            <thead>
+
+                                <tr>
+
+                                    <th>ID</th>
+
+                                    <th>Date</th>
+
+                                    <th>Title PL</th>
+
+                                    <th>Title EN</th>
+
+                                    <th>Category</th>
+
+                                    <th>Location</th>
+
+                                    <th>Status</th>
+
+                                    <th>Updated</th>
+
+                                    <th>Actions</th>
+
+                                </tr>
+
+                            </thead>
 
 
-                            <tr>
+
+                            <tbody>
 
 
-                                <!-- ID -->
-
-                                <td>
-
-                                    <?= (int)$case['id'] ?>
-
-                                </td>
+                            <?php foreach ($cases as $case): ?>
 
 
-                                <!-- Date -->
-
-                                <td>
-
-                                    <?= htmlspecialchars(
-                                        $case['event_date'] ?? ''
-                                    ) ?>
-
-                                </td>
+                                <tr>
 
 
-                                <!-- Title PL -->
+                                    <!-- ID -->
 
-                                <td class="case-title">
+                                    <td>
 
-                                    <div class="case-title-text">
+                                        <?= (int) $case['id'] ?>
+
+                                    </td>
+
+
+
+                                    <!-- DATE -->
+
+                                    <td>
 
                                         <?= htmlspecialchars(
-                                            $case['title_pl']
+                                            $case['event_date'] ?? ''
                                         ) ?>
 
-                                    </div>
-
-                                </td>
+                                    </td>
 
 
-                                <!-- Title EN -->
 
-                                <td class="case-title">
+                                    <!-- TITLE PL -->
 
-                                    <div class="case-title-text">
+                                    <td class="case-title">
+
+
+                                        <div class="case-title-text">
+
+                                            <?= htmlspecialchars(
+                                                $case['title_pl']
+                                            ) ?>
+
+                                        </div>
+
+
+                                    </td>
+
+
+
+                                    <!-- TITLE EN -->
+
+                                    <td class="case-title">
+
+
+                                        <div class="case-title-text">
+
+                                            <?= htmlspecialchars(
+                                                $case['title_en']
+                                            ) ?>
+
+                                        </div>
+
+
+                                    </td>
+
+
+
+                                    <!-- CATEGORY -->
+
+                                    <td>
+
 
                                         <?= htmlspecialchars(
-                                            $case['title_en']
+                                            $case['category_name'] ?? '—'
                                         ) ?>
 
-                                    </div>
 
-                                </td>
-
-
-                                <!-- Category -->
-
-                                <td>
-
-                                    <?= htmlspecialchars(
-                                        $case['category_name'] ?? '—'
-                                    ) ?>
-
-                                </td>
+                                    </td>
 
 
-                                <!-- Location -->
 
-                                <td>
+                                    <!-- LOCATION -->
 
-                                    <?= htmlspecialchars(
-                                        $case['location'] ?? '—'
-                                    ) ?>
-
-                                </td>
+                                    <td class="case-location">
 
 
-                                <!-- Status -->
-
-                                <td>
-
-                                    <?= htmlspecialchars(
-                                        $case['status_name'] ?? '—'
-                                    ) ?>
-
-                                </td>
+                                        <?= htmlspecialchars(
+                                            $case['location'] ?? '—'
+                                        ) ?>
 
 
-                                <!-- Updated -->
-
-                                <td>
-
-                                    <?= htmlspecialchars(
-                                        $case['updated_at']
-                                    ) ?>
-
-                                </td>
+                                    </td>
 
 
-                                <!-- Actions -->
 
-                                <td>
+                                    <!-- STATUS -->
 
-                                    <a
-                                        href="case-edit.php?id=<?= (int)$case['id'] ?>"
-                                        class="btn btn-sm btn-primary"
-                                    >
-                                        Edit
-                                    </a>
-
-                                </td>
+                                    <td>
 
 
-                            </tr>
+                                        <?= htmlspecialchars(
+                                            $case['status_name'] ?? '—'
+                                        ) ?>
 
 
-                        <?php endforeach; ?>
+                                    </td>
 
 
-                        </tbody>
 
-                    </table>
+                                    <!-- UPDATED -->
+
+                                    <td>
+
+
+                                        <?= htmlspecialchars(
+                                            $case['updated_at']
+                                        ) ?>
+
+
+                                    </td>
+
+
+
+                                    <!-- ACTIONS -->
+
+                                    <td>
+
+
+                                        <a
+                                            href="case-edit.php?id=<?= (int) $case['id'] ?>"
+                                            class="btn btn-sm btn-primary"
+                                        >
+
+                                            Edit
+
+                                        </a>
+
+
+                                    </td>
+
+
+                                </tr>
+
+
+                            <?php endforeach; ?>
+
+
+                            </tbody>
+
+
+                        </table>
+
+
+                    </div>
 
 
                 </div>
+
 
             </div>
 
@@ -341,27 +469,39 @@ $cases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 
-<!-- Tabler -->
+<!-- =============================================================
+     TABLER JAVASCRIPT
+============================================================= -->
 
 <script
     src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js">
 </script>
 
 
-<!-- DataTables -->
+
+<!-- =============================================================
+     DATATABLES JAVASCRIPT
+============================================================= -->
 
 <script
     src="https://cdn.datatables.net/2.3.5/js/dataTables.min.js">
 </script>
 
 
-<!-- DataTables Responsive -->
+
+<!-- =============================================================
+     DATATABLES RESPONSIVE JAVASCRIPT
+============================================================= -->
 
 <script
     src="https://cdn.datatables.net/responsive/3.0.7/js/dataTables.responsive.min.js">
 </script>
 
 
+
+<!-- =============================================================
+     DATATABLES INITIALIZATION
+============================================================= -->
 
 <script>
 
@@ -370,30 +510,71 @@ document.addEventListener('DOMContentLoaded', function () {
 
     new DataTable('#casesTable', {
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Responsive
+        |--------------------------------------------------------------------------
+        */
+
         responsive: true,
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Number of rows
+        |--------------------------------------------------------------------------
+        */
 
         pageLength: 25,
 
+
         lengthMenu: [
+
             [10, 25, 50, 100],
+
             [10, 25, 50, 100]
+
         ],
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Default sorting
+        |--------------------------------------------------------------------------
+        */
 
         order: [
+
             [0, 'desc']
+
         ],
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Actions column cannot be sorted
+        |--------------------------------------------------------------------------
+        */
 
         columnDefs: [
 
             {
+
                 orderable: false,
+
                 targets: 8
+
             }
 
         ],
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Language
+        |--------------------------------------------------------------------------
+        */
 
         language: {
 
@@ -421,7 +602,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         }
 
+
     });
+
 
 });
 
